@@ -51,6 +51,20 @@ def random_z_init(width, height, model, device):
 
     return z.view([-1, input_y, input_x, e_dim]).permute(0, 3, 1, 2)
 
+def z_from_image(img, img_size, model_vqgan, device):
+    if isinstance(img, str):
+        img = Image.open(img)
+
+    assert img.size[0] == img.size[1]
+
+    if img.size[0] != img_size:
+        img = img.resize((img_size, img_size))
+
+    img = torch.unsqueeze(ToTensor()(img), 0).to(device)
+    img = 2.0*img - 1.0
+
+    return model_vqgan.encode(img)[0]
+
 class ReplaceGrad(torch.autograd.Function):
     @staticmethod
     def forward(ctx, x_forward, x_backward):
