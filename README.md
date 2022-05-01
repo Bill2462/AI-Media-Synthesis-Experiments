@@ -1,12 +1,13 @@
-# AI dreams experiments
+# Experiments with media synthesis using AI
 
-This repository contains random notebooks connected with generating content using AI.
+This repository contains various fun experiments related to media synthesis using AI.
 
 ## Experiments
 
-Text guided image
-
- - `experiments/image_init.ipynb` -> Demonstration of how image can be used to initialize Z in text guided image synthesis with VQGAN + CLIP.
+ - `experiments/image_init.ipynb` -> Demonstration of how image can be used to initialize Z
+ in text guided image synthesis with VQGAN + CLIP.
+ - `experiments/spatial_control_objective_masked_mse.ipynb` -> Attempt to control which parts of
+ the image are beeing changed using masked MSE added to the loss.
 
 ## Setting up the environment
 
@@ -17,7 +18,7 @@ For example here is command to create environment using conda.
 
 ```
 conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch
-pip install omegaconf pytorch-lightning jupyterlab matplotlib
+pip install omegaconf pytorch-lightning jupyterlab matplotlib tabulate
 pip install git+https://github.com/bfirsh/taming-transformers.git
 pip install git+https://github.com/openai/CLIP.git
 ```

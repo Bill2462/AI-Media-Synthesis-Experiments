@@ -1,6 +1,7 @@
 import clip
 import torch
 from torchvision import transforms
+from tabulate import tabulate
 
 class SimplePrompt:
     """
@@ -52,15 +53,15 @@ class ObjectiveCLIP:
                                          (0.26862954, 0.26130258, 0.27577711)).to(device)
 
     def __call__(self, img):
-        img = self.agumenter(img)
-        img = self.norm(img)
-
-        img_encoding = self.model_clip.encode_image(img)
+        img_agu = self.agumenter(img)
+        img_encoding = self.model_clip.encode_image(self.norm(img_agu))
 
         loss = torch.tensor(0.0, device=self.device)
         for prompt in self.prompts:
             if isinstance(prompt, SimplePrompt):
                 loss += prompt(img_encoding)
+            else:
+                loss += prompt(img)
 
         return loss
 
@@ -68,4 +69,9 @@ class ObjectiveCLIP:
         """
         Print detailed breakdown of what is the loss value for all prompts.
         """
-        pass
+        table = [["Prompt", "Exclude", "Final loss", "Unweighted final loss"]]
+        for prompt in self.prompts:
+            table.append([prompt.prompt, prompt.exclude, float(prompt.last_loss),
+                          float(prompt.last_loss) * (1/float(prompt.weight))])
+
+        print(tabulate(table, headers="firstrow", tablefmt="fancy_grid"))
