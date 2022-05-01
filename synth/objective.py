@@ -3,43 +3,32 @@ import torch
 from torchvision import transforms
 
 class SimplePrompt:
-    input_type="image_embedding"
     """
     Simple image or text prompt that just compares the encoding of the image or text with image encoding.
     """
     @staticmethod
-    def make_image_prompts(prompts, model_clip, clip_preprocessor, device, exclude=False):
-        output = []
+    def make_from_image(filepath, weight, model_clip, clip_preprocessor, device, exclude=False):
+        img = clip_preprocessor(filepath).unsqueeze(0).to(device)
+        encoding = model_clip.encode_image(img)
+        weight = torch.tensor(weight, device=device)
 
-        for prompt in prompts:
-            img = clip_preprocessor(prompt["prompt"]).unsqueeze(0).to(device)
-            encoding = model_clip.encode_image(img)
-            weight = torch.tensor(prompt["weight"], device=device)
-
-            output.append(SimplePrompt(prompt["prompt"], encoding, prompt["weight"], exclude))
-
-        return output
+        return SimplePrompt(filepath, weight, encoding, exclude)
 
     @staticmethod
-    def make_text_prompts(prompts, model_clip, device, exclude=False):
-        output = []
+    def make_from_text(text, weight, model_clip, device, exclude=False):
+        t = clip.tokenize([text]).to(device)
+        encoding = model_clip.encode_text(t).detach()
+        weight = torch.tensor(weight, device=device)
 
-        for prompt in prompts:
-            t = clip.tokenize([prompt["prompt"]]).to(device)
-            encoding = model_clip.encode_text(t).detach()
-            weight = torch.tensor(prompt["weight"], device=device)
+        return SimplePrompt(text, weight, encoding, exclude)
 
-            output.append(SimplePrompt(prompt["prompt"], encoding, prompt["weight"], exclude))
-
-        return output
-
-    def __init__(self, prompt, encoding, weight, exclude=False):
+    def __init__(self, prompt, weight, encoding, exclude=False):
         self.prompt = prompt
-        self.encoding = encoding
         self.weight = weight
+        self.encoding = encoding
         self.exclude = exclude
 
-    def loss(self, image_encoding):
+    def __call__(self, image_encoding):
         l = torch.cosine_similarity(image_encoding, self.encoding, -1).mean() * self.weight
 
         if not self.exclude:
@@ -50,6 +39,9 @@ class SimplePrompt:
         return l
 
 class ObjectiveCLIP:
+    """
+    Objective that uses CLIP image encoder.
+    """
     def __init__(self, prompts, agumenter, model_clip, device):
         self.prompts = prompts
         self.agumenter = agumenter
@@ -67,7 +59,13 @@ class ObjectiveCLIP:
 
         loss = torch.tensor(0.0, device=self.device)
         for prompt in self.prompts:
-            if prompt.input_type == "image_embedding":
-                loss += prompt.loss(img_encoding)
+            if isinstance(prompt, SimplePrompt):
+                loss += prompt(img_encoding)
 
         return loss
+
+    def print_objective_loss_report(self):
+        """
+        Print detailed breakdown of what is the loss value for all prompts.
+        """
+        pass
