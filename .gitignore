@@ -163,3 +163,4 @@ cython_debug/
 *.pth
 
 experiments/taming
+experiments/img
